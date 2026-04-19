@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RateFlow v2.2 — Live Currency Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06090f;--s1:#0d1220;--s2:#131929;--s3:#1a2236;
+  --br:rgba(255,255,255,0.07);--br2:rgba(255,255,255,0.12);
+  --g:#00e5b0;--amber:#f59e0b;--blue:#60a5fa;--pink:#f472b6;
+  --text:#eef2ff;--m:#7c8db5;--m2:#4a5a7a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 40% at 80% 10%,rgba(0,229,176,0.05) 0%,transparent 60%),radial-gradient(ellipse 50% 50% at 10% 80%,rgba(96,165,250,0.04) 0%,transparent 60%);pointer-events:none;z-index:0}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px;position:relative;z-index:1}
+
+/* NAV */
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 0;border-bottom:1px solid var(--br);margin-bottom:28px}
+.logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:center;gap:8px}
+.logo-icon{width:30px;height:30px;background:var(--g);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#06090f;font-weight:800;font-family:'Syne',sans-serif}
+.logo em{color:var(--g);font-style:normal}
+.nav-ver{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--m2);background:var(--s1);border:1px solid var(--br);border-radius:6px;padding:3px 8px;margin-left:4px}
+.nav-right{display:flex;align-items:center;gap:8px}
+.live-badge{display:flex;align-items:center;gap:5px;background:rgba(0,229,176,0.08);border:1px solid rgba(0,229,176,0.2);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--g);font-weight:500;letter-spacing:.05em;text-transform:uppercase}
+.live-badge::before{content:'';width:6px;height:6px;background:var(--g);border-radius:50%;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.date-nav{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--m);background:var(--s1);border:1px solid var(--br);border-radius:8px;padding:5px 10px}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:var(--s1);border:1px solid var(--br);border-radius:12px;padding:4px;margin-bottom:22px;width:fit-content}
+.tab{padding:8px 18px;border-radius:9px;border:none;background:transparent;color:var(--m);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;letter-spacing:.01em}
+.tab.on{background:var(--g);color:#06090f;font-weight:600}
+.tab:not(.on):hover{color:var(--text);background:var(--s2)}
+
+/* PANEL */
+.panel{display:none;animation:fi .25s ease}
+.panel.on{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* 2-COL */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+
+/* SEC LABEL */
+.sec{display:flex;align-items:center;gap:7px;margin-bottom:11px}
+.sec span{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--m)}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot.g{background:var(--g)}.dot.a{background:var(--amber)}.dot.b{background:var(--blue)}.dot.p{background:var(--pink)}
+
+/* CARD */
+.card{background:var(--s1);border:1px solid var(--br);border-radius:16px;padding:20px;margin-bottom:14px;position:relative;overflow:hidden}
+.card.tl::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,229,176,0.45),transparent)}
+.card.ta::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(245,158,11,0.45),transparent)}
+.card.tp::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(244,114,182,0.45),transparent)}
+
+/* INPUT */
+.ib{margin-bottom:13px}
+.ib:last-child{margin-bottom:0}
+.lbl{font-size:10px;color:var(--m);font-weight:500;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;display:block}
+.irow{display:flex;gap:8px;align-items:center}
+.f{flex:1;background:var(--s2);border:1px solid var(--br2);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:500;outline:none;width:100%;transition:all .18s;appearance:none;-webkit-appearance:none}
+.f:focus{border-color:var(--g);box-shadow:0 0 0 3px rgba(0,229,176,0.1);background:var(--s3)}
+.f::placeholder{color:var(--m2);font-size:15px}
+.f::-webkit-inner-spin-button,.f::-webkit-outer-spin-button{-webkit-appearance:none}
+.f.date{font-size:15px;cursor:pointer;color:var(--m)}
+.f.sel{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer}
+.tag{background:var(--s3);border:1px solid var(--br2);border-radius:8px;padding:10px 14px;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;white-space:nowrap;flex-shrink:0}
+.tag.g{color:var(--g)}.tag.a{color:var(--amber)}.tag.b{color:var(--blue)}.tag.p{color:var(--pink)}
+.hint{font-size:11px;margin-top:5px;font-family:'JetBrains Mono',monospace;color:var(--m2);transition:color .2s}
+.hint.ok{color:rgba(0,229,176,0.55)}
+.div-line{display:flex;align-items:center;gap:8px;margin:9px 0}
+.div-line::before,.div-line::after{content:'';flex:1;height:1px;background:var(--br)}
+.div-line i{font-size:11px;color:var(--m2);font-family:'JetBrains Mono',monospace;font-style:normal}
+
+/* RESULT CARD */
+.rc{background:var(--s1);border:1px solid var(--br);border-radius:16px;overflow:hidden;margin-bottom:14px}
+.rch{padding:12px 18px;border-bottom:1px solid var(--br);display:flex;align-items:center;justify-content:space-between}
+.rct{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--m)}
+.rcd{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--m2)}
+.rcb{padding:16px 18px}
+.bignum{font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:500;line-height:1;letter-spacing:-1px;margin-bottom:4px;transition:color .2s}
+.bignum.g{color:var(--g)}.bignum.a{color:var(--amber)}.bignum.b{color:var(--blue)}.bignum.p{color:var(--pink)}
+.numsub{font-size:12px;color:var(--m);margin-bottom:14px}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mi{background:var(--s2);border-radius:9px;padding:9px 12px;border:1px solid var(--br)}
+.mil{font-size:10px;color:var(--m2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.miv{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text)}
+.rt{width:100%;border-collapse:collapse}
+.rt th{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--m2);padding:0 0 9px;text-align:left;border-bottom:1px solid var(--br);font-weight:500}
+.rt td{padding:9px 0;border-bottom:1px solid var(--br);font-size:13px;vertical-align:middle}
+.rt tr:last-child td{border-bottom:none}
+.pc{font-family:'Syne',sans-serif;font-size:12px;font-weight:700}
+.rv{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:500}
+.rrev{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--m2);margin-top:2px}
+.empty{text-align:center;padding:18px 10px;color:var(--m2);font-size:12px;line-height:1.7}
+
+/* RATE FINDER SPECIFIC */
+.rf-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.rf-card{background:var(--s1);border:1px solid var(--br);border-radius:16px;padding:18px;position:relative;overflow:hidden;transition:border-color .2s}
+.rf-card.active{border-color:rgba(0,229,176,0.25)}
+.rf-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px}
+.rf-card.rf-bdt::before{background:linear-gradient(90deg,transparent,rgba(245,158,11,0.4),transparent)}
+.rf-card.rf-inr::before{background:linear-gradient(90deg,transparent,rgba(96,165,250,0.4),transparent)}
+.rf-card.rf-bdtinr::before{background:linear-gradient(90deg,transparent,rgba(244,114,182,0.4),transparent)}
+.rf-head{display:flex;align-items:center;gap:7px;margin-bottom:14px}
+.rf-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--m)}
+.rf-result-box{background:var(--s2);border-radius:10px;padding:12px 14px;margin-top:12px;border:1px solid var(--br);min-height:60px;display:flex;flex-direction:column;justify-content:center}
+.rf-rate{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:500;line-height:1.1}
+.rf-rate.g{color:var(--g)}.rf-rate.a{color:var(--amber)}.rf-rate.b{color:var(--blue)}.rf-rate.p{color:var(--pink)}
+.rf-sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--m2);margin-top:4px}
+.rf-eq{font-size:11px;color:var(--m2);margin-top:3px;font-family:'JetBrains Mono',monospace}
+
+/* COMPARE SECTION */
+.compare-strip{background:var(--s2);border:1px solid var(--br);border-radius:12px;padding:14px 18px;margin-top:4px}
+.cs-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--m);margin-bottom:12px}
+.cs-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--br)}
+.cs-row:last-child{border-bottom:none}
+.cs-label{font-size:12px;color:var(--m)}
+.cs-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:500}
+.badge-best{display:inline-block;font-size:9px;padding:2px 7px;border-radius:10px;background:rgba(0,229,176,0.12);color:var(--g);border:1px solid rgba(0,229,176,0.2);font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.04em;margin-left:6px;vertical-align:middle}
+
+footer{text-align:center;padding:28px 0 18px;border-top:1px solid var(--br);margin-top:40px;font-size:11px;color:var(--m2);letter-spacing:.04em}
+footer strong{color:var(--g);font-family:'Syne',sans-serif}
+
+@media(max-width:700px){
+  .two-col{grid-template-columns:1fr}
+  .rf-grid{grid-template-columns:1fr}
+  .mgrid{grid-template-columns:1fr}
+  .bignum{font-size:26px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav>
+  <div class="logo">
+    <div class="logo-icon">RF</div>
+    Rate<em>Flow</em>
+    <span class="nav-ver">v2.2</span>
+  </div>
+  <div class="nav-right">
+    <div class="live-badge">Live</div>
+    <div class="date-nav" id="navDate">—</div>
+  </div>
+</nav>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab on" onclick="switchTab('convert',this)">💱 Converter</button>
+  <button class="tab" onclick="switchTab('finder',this)">🔍 Rate Finder</button>
+</div>
+
+<!-- ========== CONVERTER PANEL ========== -->
+<div class="panel on" id="panel-convert">
+<div class="two-col">
+
+  <!-- LEFT -->
+  <div>
+    <div class="sec"><div class="dot g"></div><span>Exchange Rates (per 1 USD)</span></div>
+    <div class="card tl">
+      <div class="ib">
+        <label class="lbl">Dollar — USD (Base, Fixed)</label>
+        <div class="irow">
+          <input class="f" value="1" readonly style="color:var(--m);font-size:16px;cursor:not-allowed">
+          <div class="tag g">USD</div>
+        </div>
+      </div>
+      <div class="div-line"><i>▾</i></div>
+      <div class="ib">
+        <label class="lbl">Taka Rate — 1 USD = ? BDT</label>
+        <div class="irow">
+          <input class="f" id="rBDT" type="number" placeholder="128.50" min="0" step="0.01" oninput="calc()">
+          <div class="tag a">BDT</div>
+        </div>
+        <div class="hint" id="hBDT">Enter BDT rate above ↑</div>
+      </div>
+      <div class="div-line"><i>▾</i></div>
+      <div class="ib">
+        <label class="lbl">Rupee Rate — 1 USD = ? INR</label>
+        <div class="irow">
+          <input class="f" id="rINR" type="number" placeholder="98.28" min="0" step="0.01" oninput="calc()">
+          <div class="tag b">INR</div>
+        </div>
+        <div class="hint" id="hINR">Enter INR rate above ↑</div>
+      </div>
+    </div>
+
+    <div class="sec"><div class="dot a"></div><span>Rate Date</span></div>
+    <div class="card">
+      <div class="ib" style="margin-bottom:0">
+        <label class="lbl">Select Date</label>
+        <input class="f date" id="rDate" type="date" oninput="calc()">
+      </div>
+    </div>
+
+    <div class="sec"><div class="dot b"></div><span>Amount to Convert</span></div>
+    <div class="card">
+      <div class="ib">
+        <label class="lbl">Enter Amount</label>
+        <div class="irow">
+          <input class="f" id="amount" type="number" placeholder="1000" min="0" step="any" oninput="calc()">
+          <select class="f sel" id="fromCur" onchange="calc()" style="flex:0 0 88px;padding:12px 8px">
+            <option value="USD">$ USD</option>
+            <option value="BDT">৳ BDT</option>
+            <option value="INR">₹ INR</option>
+          </select>
+        </div>
+      </div>
+      <div class="ib" style="margin-bottom:0">
+        <label class="lbl">Convert To</label>
+        <select class="f sel" id="toCur" onchange="calc()" style="font-size:14px">
+          <option value="BDT">৳ BDT — Bangladeshi Taka</option>
+          <option value="INR">₹ INR — Indian Rupee</option>
+          <option value="USD">$ USD — US Dollar</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT RESULTS -->
+  <div>
+    <div class="sec"><div class="dot g"></div><span>Live Results</span></div>
+
+    <div class="rc">
+      <div class="rch"><span class="rct">Conversion Result</span><span class="rcd" id="rcDate">—</span></div>
+      <div class="rcb" id="mainRes"><div class="empty">Enter rates &amp; amount on the left</div></div>
+    </div>
+
+    <div class="rc">
+      <div class="rch"><span class="rct">All Values — your amount</span></div>
+      <div class="rcb" id="allRes"><div class="empty">Enter amount to see all conversions</div></div>
+    </div>
+
+    <div class="rc">
+      <div class="rch"><span class="rct">Cross Rates (per 1 unit)</span></div>
+      <div class="rcb" id="crossRes"><div class="empty">Enter BDT &amp; INR rates to see cross rates</div></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ========== RATE FINDER PANEL ========== -->
+<div class="panel" id="panel-finder">
+
+  <div class="sec"><div class="dot p"></div><span>Rate Finder — Enter two amounts to find the rate between them</span></div>
+
+  <!-- 3 CARDS -->
+  <div class="rf-grid">
+
+    <!-- BDT → USD -->
+    <div class="rf-card rf-bdt" id="rfcard1">
+      <div class="rf-head"><div class="dot a"></div><span class="rf-title">BDT → USD Rate</span></div>
+      <div class="ib">
+        <label class="lbl">Dollar Amount ($)</label>
+        <div class="irow">
+          <input class="f" id="rf1_usd" type="number" placeholder="480" min="0" step="any" style="font-size:18px" oninput="rfCalc1()">
+          <div class="tag g" style="font-size:12px;padding:8px 10px">USD</div>
+        </div>
+      </div>
+      <div class="ib" style="margin-bottom:0">
+        <label class="lbl">Taka Amount (৳)</label>
+        <div class="irow">
+          <input class="f" id="rf1_bdt" type="number" placeholder="55000" min="0" step="any" style="font-size:18px" oninput="rfCalc1()">
+          <div class="tag a" style="font-size:12px;padding:8px 10px">BDT</div>
+        </div>
+      </div>
+      <div class="rf-result-box" id="rfres1">
+        <div class="rf-sub">Enter both amounts above ↑</div>
+      </div>
+    </div>
+
+    <!-- INR → USD -->
+    <div class="rf-card rf-inr" id="rfcard2">
+      <div class="rf-head"><div class="dot b"></div><span class="rf-title">INR → USD Rate</span></div>
+      <div class="ib">
+        <label class="lbl">Dollar Amount ($)</label>
+        <div class="irow">
+          <input class="f" id="rf2_usd" type="number" placeholder="480" min="0" step="any" style="font-size:18px" oninput="rfCalc2()">
+          <div class="tag g" style="font-size:12px;padding:8px 10px">USD</div>
+        </div>
+      </div>
+      <div class="ib" style="margin-bottom:0">
+        <label class="lbl">Rupee Amount (₹)</label>
+        <div class="irow">
+          <input class="f" id="rf2_inr" type="number" placeholder="45000" min="0" step="any" style="font-size:18px" oninput="rfCalc2()">
+          <div class="tag b" style="font-size:12px;padding:8px 10px">INR</div>
+        </div>
+      </div>
+      <div class="rf-result-box" id="rfres2">
+        <div class="rf-sub">Enter both amounts above ↑</div>
+      </div>
+    </div>
+
+    <!-- BDT → INR -->
+    <div class="rf-card rf-bdtinr" id="rfcard3">
+      <div class="rf-head"><div class="dot p"></div><span class="rf-title">BDT → INR Rate</span></div>
+      <div class="ib">
+        <label class="lbl">Taka Amount (৳)</label>
+        <div class="irow">
+          <input class="f" id="rf3_bdt" type="number" placeholder="1000" min="0" step="any" style="font-size:18px" oninput="rfCalc3()">
+          <div class="tag a" style="font-size:12px;padding:8px 10px">BDT</div>
+        </div>
+      </div>
+      <div class="ib" style="margin-bottom:0">
+        <label class="lbl">Rupee Amount (₹)</label>
+        <div class="irow">
+          <input class="f" id="rf3_inr" type="number" placeholder="765" min="0" step="any" style="font-size:18px" oninput="rfCalc3()">
+          <div class="tag b" style="font-size:12px;padding:8px 10px">INR</div>
+        </div>
+      </div>
+      <div class="rf-result-box" id="rfres3">
+        <div class="rf-sub">Enter both amounts above ↑</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- COMPARE STRIP -->
+  <div class="compare-strip" id="compareStrip">
+    <div class="cs-title">📊 Rate Comparison — All finders</div>
+    <div id="compareRows"><div class="empty" style="text-align:left;padding:8px 0">Enter amounts in the cards above to compare rates</div></div>
+  </div>
+
+</div><!-- /finder -->
+
+<footer><strong>RateFlow</strong> <span style="color:var(--m2)">v2.2</span> &nbsp;·&nbsp; Live Currency Calculator &nbsp;·&nbsp; Values update as you type</footer>
+</div>
+
+<script>
+// ─── UTILS ───────────────────────────────
+function fmtDate(v){if(!v)return'—';const d=new Date(v+'T00:00:00');return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
+function f(n,d=2){if(isNaN(n)||!isFinite(n))return'—';return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d})}
+function f4(n){return f(n,4)}
+const sym={USD:'$',BDT:'৳',INR:'₹'};
+const names={USD:'US Dollar',BDT:'Bangladeshi Taka',INR:'Indian Rupee'};
+const cls={USD:'g',BDT:'a',INR:'b'};
+
+// ─── INIT DATE ────────────────────────────
+const today=new Date().toISOString().split('T')[0];
+document.getElementById('rDate').value=today;
+document.getElementById('navDate').textContent=fmtDate(today);
+document.getElementById('rcDate').textContent=fmtDate(today);
+
+// ─── TAB SWITCH ───────────────────────────
+function switchTab(name,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.getElementById('panel-'+name).classList.add('on');
+  btn.classList.add('on');
+}
+
+// ─── CONVERTER ────────────────────────────
+function getRates(){
+  const b=parseFloat(document.getElementById('rBDT').value);
+  const i=parseFloat(document.getElementById('rINR').value);
+  return{USD:1,BDT:(!isNaN(b)&&b>0)?b:null,INR:(!isNaN(i)&&i>0)?i:null};
+}
+
+function calc(){
+  const r=getRates();
+  const dateStr=fmtDate(document.getElementById('rDate').value);
+  document.getElementById('rcDate').textContent=dateStr;
+  document.getElementById('navDate').textContent=dateStr;
+
+  const hBDT=document.getElementById('hBDT'),hINR=document.getElementById('hINR');
+  if(r.BDT){hBDT.textContent='✓  1 BDT = $'+f4(1/r.BDT)+' USD';hBDT.className='hint ok'}
+  else{hBDT.textContent='Enter BDT rate above ↑';hBDT.className='hint'}
+  if(r.INR){hINR.textContent='✓  1 INR = $'+f4(1/r.INR)+' USD';hINR.className='hint ok'}
+  else{hINR.textContent='Enter INR rate above ↑';hINR.className='hint'}
+
+  renderCross(r);
+
+  const amt=parseFloat(document.getElementById('amount').value);
+  const from=document.getElementById('fromCur').value;
+  const to=document.getElementById('toCur').value;
+
+  if(isNaN(amt)||amt<0){
+    document.getElementById('mainRes').innerHTML='<div class="empty">Enter rates &amp; amount on the left</div>';
+    document.getElementById('allRes').innerHTML='<div class="empty">Enter amount to see all conversions</div>';
+    return;
+  }
+  if(r[from]===null){document.getElementById('mainRes').innerHTML=`<div class="empty">⚠️ Enter ${from} rate above</div>`;return}
+  if(r[to]===null){document.getElementById('mainRes').innerHTML=`<div class="empty">⚠️ Enter ${to} rate above</div>`;return}
+
+  const usd=amt/r[from];
+  const result=usd*r[to];
+  const cr=r[to]/r[from];
+  const rev=1/cr;
+
+  document.getElementById('mainRes').innerHTML=`
+    <div class="bignum ${cls[to]}">${f(result)} <span style="font-size:18px;opacity:.65">${to}</span></div>
+    <div class="numsub">${f(amt)} ${from} &nbsp;·&nbsp; ${dateStr}</div>
+    <div class="mgrid">
+      <div class="mi"><div class="mil">Rate used</div><div class="miv">1 ${from} = ${f4(cr)} ${to}</div></div>
+      <div class="mi"><div class="mil">Reverse rate</div><div class="miv">1 ${to} = ${f4(rev)} ${from}</div></div>
+      <div class="mi"><div class="mil">USD value</div><div class="miv">$ ${f(usd)}</div></div>
+      <div class="mi"><div class="mil">You entered</div><div class="miv">${f(amt)} ${from}</div></div>
+    </div>`;
+
+  renderAll(amt,from,r,usd);
+}
+
+function renderAll(amt,from,r,usd){
+  const all=['USD','BDT','INR'];
+  const rows=all.filter(c=>c!==from).map(c=>{
+    if(r[c]===null)return`<tr><td><span class="pc" style="color:var(--m)">${c}</span><div style="font-size:10px;color:var(--m2)">${names[c]}</div></td><td><span style="color:var(--m2);font-size:12px">— rate not set</span></td></tr>`;
+    const v=usd*r[c];
+    return`<tr><td><span class="pc ${cls[c]}">${c}</span><div style="font-size:10px;color:var(--m2)">${names[c]}</div></td><td><div class="rv ${cls[c]}">${sym[c]} ${f(v)}</div></td></tr>`;
+  }).join('');
+  document.getElementById('allRes').innerHTML=`<table class="rt"><thead><tr><th>Currency</th><th>Value of ${f(amt)} ${from}</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderCross(r){
+  const pairs=[
+    {f:'USD',t:'BDT',fc:'g',tc:'a'},{f:'USD',t:'INR',fc:'g',tc:'b'},
+    {f:'BDT',t:'INR',fc:'a',tc:'b'},{f:'INR',t:'BDT',fc:'b',tc:'a'},
+    {f:'BDT',t:'USD',fc:'a',tc:'g'},{f:'INR',t:'USD',fc:'b',tc:'g'},
+  ];
+  const rows=pairs.map(p=>{
+    if(r[p.f]===null||r[p.t]===null)return'';
+    const cr=r[p.t]/r[p.f];const rev=1/cr;
+    return`<tr>
+      <td><span class="pc ${p.fc}">${p.f}</span><span style="color:var(--m2);margin:0 4px">→</span><span class="pc ${p.tc}">${p.t}</span></td>
+      <td><div class="rv ${p.tc}">${sym[p.t]} ${f4(cr)}</div><div class="rrev">↩ 1 ${p.t} = ${sym[p.f]} ${f4(rev)}</div></td>
+    </tr>`;
+  }).filter(Boolean).join('');
+  if(!rows){document.getElementById('crossRes').innerHTML='<div class="empty">Enter BDT &amp; INR rates to see cross rates</div>';return}
+  document.getElementById('crossRes').innerHTML=`<table class="rt"><thead><tr><th>Pair</th><th>Rate per 1 unit</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// ─── RATE FINDER ──────────────────────────
+// Store computed rates for comparison
+const rfRates={bdt_usd:null,inr_usd:null,bdt_inr:null};
+
+function rfCalc1(){
+  const usd=parseFloat(document.getElementById('rf1_usd').value);
+  const bdt=parseFloat(document.getElementById('rf1_bdt').value);
+  const box=document.getElementById('rfres1');
+  if(isNaN(usd)||usd<=0||isNaN(bdt)||bdt<=0){
+    box.innerHTML='<div class="rf-sub">Enter both amounts above ↑</div>';
+    rfRates.bdt_usd=null;rfRender();return;
+  }
+  const rate=bdt/usd; // BDT per 1 USD
+  const rev=1/rate;   // USD per 1 BDT
+  rfRates.bdt_usd=rate;
+  box.innerHTML=`
+    <div class="rf-rate a">1 USD = ${f(rate,4)} BDT</div>
+    <div class="rf-sub">1 BDT = $${f4(rev)} USD</div>
+    <div class="rf-eq">${sym.USD}${f(usd)} = ${sym.BDT}${f(bdt,0)}</div>`;
+  rfRender();
+}
+
+function rfCalc2(){
+  const usd=parseFloat(document.getElementById('rf2_usd').value);
+  const inr=parseFloat(document.getElementById('rf2_inr').value);
+  const box=document.getElementById('rfres2');
+  if(isNaN(usd)||usd<=0||isNaN(inr)||inr<=0){
+    box.innerHTML='<div class="rf-sub">Enter both amounts above ↑</div>';
+    rfRates.inr_usd=null;rfRender();return;
+  }
+  const rate=inr/usd;
+  const rev=1/rate;
+  rfRates.inr_usd=rate;
+  box.innerHTML=`
+    <div class="rf-rate b">1 USD = ${f(rate,4)} INR</div>
+    <div class="rf-sub">1 INR = $${f4(rev)} USD</div>
+    <div class="rf-eq">${sym.USD}${f(usd)} = ${sym.INR}${f(inr,0)}</div>`;
+  rfRender();
+}
+
+function rfCalc3(){
+  const bdt=parseFloat(document.getElementById('rf3_bdt').value);
+  const inr=parseFloat(document.getElementById('rf3_inr').value);
+  const box=document.getElementById('rfres3');
+  if(isNaN(bdt)||bdt<=0||isNaN(inr)||inr<=0){
+    box.innerHTML='<div class="rf-sub">Enter both amounts above ↑</div>';
+    rfRates.bdt_inr=null;rfRender();return;
+  }
+  const rate=inr/bdt; // INR per 1 BDT
+  const rev=1/rate;
+  rfRates.bdt_inr=rate;
+  box.innerHTML=`
+    <div class="rf-rate p">1 BDT = ${f(rate,4)} INR</div>
+    <div class="rf-sub">1 INR = ${f4(rev)} BDT</div>
+    <div class="rf-eq">${sym.BDT}${f(bdt,0)} = ${sym.INR}${f(inr,0)}</div>`;
+  rfRender();
+}
+
+function rfRender(){
+  // Build comparison strip
+  const rows=[];
+  const all=[
+    {key:'bdt_usd',label:'BDT per 1 USD',cls:'a',sym:'৳',desc:'Taka → Dollar rate'},
+    {key:'inr_usd',label:'INR per 1 USD',cls:'b',sym:'₹',desc:'Rupee → Dollar rate'},
+    {key:'bdt_inr',label:'INR per 1 BDT',cls:'p',sym:'₹',desc:'Taka → Rupee rate'},
+  ];
+  const available=all.filter(x=>rfRates[x.key]!==null);
+  if(available.length===0){
+    document.getElementById('compareRows').innerHTML='<div class="empty" style="text-align:left;padding:8px 0">Enter amounts in the cards above to compare rates</div>';
+    return;
+  }
+  // For BDT/INR vs USD, find best rate (highest BDT or INR per USD = cheapest dollar)
+  let html='';
+  available.forEach(x=>{
+    const isBest=available.length>1&&x.key!=='bdt_inr'&&
+      available.filter(y=>y.key!=='bdt_inr').every(y=>rfRates[x.key]>=rfRates[y.key]);
+    html+=`<div class="cs-row">
+      <div>
+        <span class="cs-label">${x.desc}</span>
+        <span style="font-size:10px;color:var(--m2);display:block">${x.label}</span>
+      </div>
+      <div>
+        <span class="cs-val ${x.cls}">${x.sym}${f(rfRates[x.key],4)}</span>
+        ${isBest?'<span class="badge-best">BEST</span>':''}
+      </div>
+    </div>`;
+  });
+  // If both bdt_usd and inr_usd exist, add cross rate check
+  if(rfRates.bdt_usd&&rfRates.inr_usd){
+    const implied=rfRates.inr_usd/rfRates.bdt_usd;
+    html+=`<div class="cs-row" style="background:rgba(244,114,182,0.05);border-radius:8px;padding:8px 6px;margin-top:4px">
+      <div>
+        <span class="cs-label" style="color:var(--pink)">Implied BDT→INR cross rate</span>
+        <span style="font-size:10px;color:var(--m2);display:block">Calculated from your two entries</span>
+      </div>
+      <div><span class="cs-val p">₹${f(implied,4)} per BDT</span></div>
+    </div>`;
+  }
+  document.getElementById('compareRows').innerHTML=html;
+}
+
+// ─── INIT ──────────────────────────────────
+calc();
+</script>
+</body>
+</html>
