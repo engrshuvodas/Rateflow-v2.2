@@ -89,10 +89,10 @@ rateflow/
 <h2>🚀 How to Use</h2>
 
 <h3>1. Clone Repository</h3>
-<pre>git clone https://github.com/yourusername/rateflow.git</pre>
+<pre>git clone https://github.com/engrshuvodas/Rateflow-v2.2.git</pre>
 
 <h3>2. Open File</h3>
-<pre>rateflow-v2.2.html</pre>
+<pre>index.html</pre>
 
 <p>No installation required.</p>
 
